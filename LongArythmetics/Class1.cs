@@ -73,6 +73,22 @@ namespace LongArythmetics
             }
         }
 
+
+        /// <summary>
+        /// Возвращает число типа LongBit, состоящее из length символов, начиная с l-того
+        /// </summary>
+        /// <param name="l"></param>
+        /// <param name="length"></param>
+        /// <returns></returns>
+        private LongBit Copy(int l, int length)
+        {
+            LongBit res = new LongBit();
+            for(int i = l; i - l < length; i++)
+                res[i - l] = this[i];
+
+            return res;
+        }
+
         private static LongBit GetSum(LongBit a, LongBit b)
         {
             LongBit res = new LongBit();
@@ -119,6 +135,18 @@ namespace LongArythmetics
             return res;
         }
 
+        private void Normalize()
+        {
+            for(int i = 0; i < this.Length; i++)
+            {
+                if(this[i] > 1)
+                {
+                    this[i + 1] += this[i] / 2;
+                    this[i] = this[i] % 2;
+                }
+            }
+        }
+
         private static LongBit GetSlowMultiplication(LongBit a, LongBit b)
         {
             LongBit res = new LongBit();
@@ -130,31 +158,50 @@ namespace LongArythmetics
                 }
             }
 
-            for(int i = 0; i < res.Length; i++ )
-            {
-                if (res[i] > 1)
-                {
-                    res[i + 1] += res[i] / 2;
-                    res[i] = res[i] % 2;
-                }
-            }
+            res.Normalize();
             
             return res;
         }
 
+        private static LongBit GetFastMultiplication(LongBit a, LongBit b)
+        {
+            if(a.Length < 40 || b.Length < 40)
+                return GetSlowMultiplication(a, b);
+
+            LongBit res = new LongBit();
+
+            LongBit A0 = a.Copy(0, a.Length / 2);
+            LongBit A1 = a.Copy(a.Length, a.Length / 2 + a.Length % 2);
+            LongBit B0 = b.Copy(0, b.Length / 2);
+            LongBit B1 = b.Copy(b.Length, b.Length / 2 + b.Length % 2);
+
+            LongBit A0B0 = GetFastMultiplication(A0, B0);
+            LongBit A1B1 = GetFastMultiplication(A1, B1);
+            LongBit AsBs = GetFastMultiplication(A0 + A1, B0 + B1);
+
+            LongBit middle = AsBs - A0B0 - A1B1;
+            res = A0B0;
+            for(int i = A0B0.Length; i < A0B0.Length + A1B1.Length; i++)
+                res[i] = A1B1[i - A0B0.Length];
+
+            for(int i = 0; i < middle.Length; i++)
+                res[i + A0.Length] += middle[i];
+
+            res.Normalize();
+
+            return res;
+        }
         public static LongBit operator +(LongBit a, LongBit b)
         {
             return GetSum(a, b);
         }
-
         public static LongBit operator -(LongBit a, LongBit b)
         {
             return GetMinus(a, b);
         }
-
         public static LongBit operator *(LongBit a, LongBit b)
         {
-            return GetSlowMultiplication(a, b);
+            return GetFastMultiplication(a, b);
         }
     }
 }
