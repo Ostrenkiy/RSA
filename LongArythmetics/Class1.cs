@@ -34,6 +34,11 @@ namespace LongArythmetics
             }
         }
 
+        public LongBit(LongBit a)
+        {
+            this.Value = (int[])a.Value.Clone();
+            this.Length = a.Length;
+        }
         public LongBit():this(0)
         { }
         
@@ -105,6 +110,15 @@ namespace LongArythmetics
             return res;
         }
 
+        private void CountLength()
+        {
+            for(int i = this.Length - 1; i > 0; i--)
+                if(this[i] != 0)
+                    break;
+                else
+                    this.Length--;
+        }
+
         /// <summary>
         /// Вычисляет разность чисел а и b при a > b  (!!!!!!!)
         /// </summary>
@@ -113,7 +127,7 @@ namespace LongArythmetics
         /// <returns></returns>
         private static LongBit GetMinus(LongBit a, LongBit b)
         {
-            LongBit aClone = a;
+            LongBit aClone = new LongBit(a);
             LongBit res = new LongBit();
             for (int i = 0; i < Math.Max(a.Length, b.Length); i++)
             {
@@ -131,7 +145,11 @@ namespace LongArythmetics
                 }
                 res[i] = a[i] - b[i];
             }
-            a = aClone;
+
+            res.CountLength();
+
+            a.Value = aClone.Value;
+            a.Length = aClone.Length;
             return res;
         }
 
@@ -145,6 +163,12 @@ namespace LongArythmetics
                     this[i] = this[i] % 2;
                 }
             }
+            while (this[this.Length-1] > 1)
+            {
+                this[this.Length] += this[this.Length - 1] / 2;
+                this[this.Length - 1] = this[this.Length - 1] % 2;
+            }
+
         }
 
         private static LongBit GetSlowMultiplication(LongBit a, LongBit b)
@@ -190,6 +214,119 @@ namespace LongArythmetics
             res.Normalize();
 
             return res;
+        }
+
+        /// <summary>
+        /// Сравнивает два числа 
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns>-1 , если a < b; 0, если а = b и 1, если a > b </returns>
+        private static int Compare(LongBit a, LongBit b)
+        {
+            if(a.Length > b.Length)
+                return 1;
+            if(a.Length < b.Length)
+                return -1;
+            if(String.Compare(a.ToString(), b.ToString()) > 0)
+                return 1;
+            if(String.Compare(a.ToString(), b.ToString()) < 0)
+                return -1;
+            return 0;
+        }
+
+        /// <summary>
+        /// Сдвиг числа на l битов влево
+        /// </summary>
+        /// <param name="l"></param>
+        /// <returns></returns>
+        private LongBit LeftShift(int l)
+        {
+            LongBit res = new LongBit();
+            for(int i = l; i < l+this.Length; i++)
+            {
+                res[i] = this[i - l];
+            }
+            return res;
+        }
+
+        private LongBit RightShift(int l)
+        {
+            return this.Copy(l, this.Length - l);
+        }
+
+        private static LongBit Mod(LongBit a, LongBit b)
+        {
+            LongBit aClone = new LongBit(a);
+            while (a >= b)
+            {
+                if (a >= (b << (a.Length - b.Length)))
+                {
+                    a = a - (b << (a.Length - b.Length));
+                }
+                else
+                {
+                    a = a - (b << (a.Length - b.Length - 1));
+                }
+            }
+            LongBit res = a;
+            a = aClone;
+            return res;
+        }
+
+        private static LongBit Xor(LongBit a, LongBit b)
+        {
+            LongBit res = new LongBit();
+            for(int i = 0; i < Math.Max(a.Length, b.Length); i++)
+            {
+                if(a[i] == b[i])
+                    res[i] = 0;
+                else
+                    res[i] = 1;
+            }
+            res.CountLength();
+            return res;
+        }
+
+        public static LongBit operator ^(LongBit a, LongBit b)
+        {
+            return Xor(a, b);
+        }
+        public static LongBit operator %(LongBit a, LongBit b)
+        {
+            return Mod(a, b);
+        }
+        public static LongBit operator <<(LongBit a, int l)
+        {
+            return a.LeftShift(l);
+        }
+        public static LongBit operator >>(LongBit a, int l)
+        {
+            return a.RightShift(l);
+        }
+        public static bool operator ==(LongBit a, LongBit b)
+        {
+            return (Compare(a, b) == 0);
+        }
+        public static bool operator >(LongBit a, LongBit b)
+        {
+            return (Compare(a, b) == 1);
+        }
+        public static bool operator <(LongBit a, LongBit b)
+        {
+            return (Compare(a, b) == -1);
+        }
+        public static bool operator >=(LongBit a, LongBit b)
+        {
+            return (Compare(a, b) >= 0);
+        }
+        public static bool operator <=(LongBit a, LongBit b)
+        {
+            return (Compare(a, b) == 0);
+        }
+        public static bool operator !=(LongBit a, LongBit b)
+        {
+            return (Compare(a, b) != 0);
         }
         public static LongBit operator +(LongBit a, LongBit b)
         {
